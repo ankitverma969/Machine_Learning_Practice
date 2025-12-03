@@ -1,0 +1,19 @@
+# ---- Core ----
+numpy==1.26.4
+pandas==2.1.4
+scikit-learn==1.3.2
+xgboost==1.7.6
+joblib==1.3.2
+
+# ---- SHAP (compatible with Windows) ----
+shap==0.43.0
+
+# ---- FastAPI ----
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# ---- Pydantic ----
+pydantic==2.6.1
+
+# ---- For CORS / Forms ----
+python-multipart==0.0.6

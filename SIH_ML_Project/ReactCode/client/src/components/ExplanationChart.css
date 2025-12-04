@@ -1,0 +1,72 @@
+.explanation-container {
+  width: 100%;
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.1);
+  margin-top: 25px;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.explanation-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #222;
+  text-align: center;
+}
+
+.chart-wrapper {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chart-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.feature-name {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.bar {
+  height: 32px;
+  background: linear-gradient(90deg, #457bff, #6ea0ff);
+  border-radius: 10px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.impact-value {
+  position: absolute;
+  right: 10px;
+  font-size: 13px;
+}
+
+.no-data {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+}
+
+.no-data svg {
+  margin-bottom: 8px;
+  color: #777;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

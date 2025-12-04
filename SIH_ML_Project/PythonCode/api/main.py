@@ -8,54 +8,64 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-# Import schemas
+# Import Pydantic schemas
 from api.schemas import StudentInput, PredictionResponse, HealthResponse
 
 # Prediction function
 from src.predict import predict_single
 
 
-# -------------------------------------------------------------
-# 1. FASTAPI APP SETUP
-# -------------------------------------------------------------
+# ============================================================
+# 1. FASTAPI SETUP
+# ============================================================
 app = FastAPI(
     title="AI Career Guidance System",
-    description="Predicts student performance category and provides career recommendations.",
-    version="1.0.0"
+    description="Predicts recommended career paths for B.Tech students using ML + SHAP explainability.",
+    version="2.0.0"
 )
 
-# Allow MERN frontend calls
+# CORS for MERN frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict if needed
+    allow_origins=["*"],  # change to specific domain before production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# -------------------------------------------------------------
+# ============================================================
 # 2. HEALTH CHECK ENDPOINT
-# -------------------------------------------------------------
+# ============================================================
 @app.get("/health", response_model=HealthResponse)
 def health_check():
-    return {"status": "ok", "message": "API is running."}
+    return {
+        "status": "ok",
+        "message": "AI Career Guidance API is running successfully."
+    }
 
 
-# -------------------------------------------------------------
-# 3. MAIN ML PREDICTION ENDPOINT
-# -------------------------------------------------------------
+# ============================================================
+# 3. MAIN PREDICTION ENDPOINT
+# ============================================================
 @app.post("/predict", response_model=PredictionResponse)
 def predict_student(data: StudentInput):
     """
-    Accept student academic + behavior data,
-    run ML model inference,
-    return prediction + confidence + SHAP explanations.
+    Accepts student attributes (academics + skills + coding + GitHub + aptitude)
+    Runs ML model inference
+    Returns:
+        - Recommended Career Path
+        - Confidence Score
+        - Probability Distribution
+        - Top SHAP explanations
     """
     try:
-        input_dict = data.dict()
-        result = predict_single(input_dict)
+        user_input = data.dict()  # convert to Python dict
 
+        # ML prediction
+        result = predict_single(user_input)
+
+        # Build API structured response
         return {
             "status": "success",
             "prediction": result["prediction"],
@@ -65,11 +75,19 @@ def predict_student(data: StudentInput):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"🔥 Prediction Failed: {str(e)}"
+        )
 
 
-# -------------------------------------------------------------
+# ============================================================
 # 4. RUN SERVER (DEV MODE)
-# -------------------------------------------------------------
+# ============================================================
 if __name__ == "__main__":
-    uvicorn.run("api.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "api.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )

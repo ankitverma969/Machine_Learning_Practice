@@ -75,48 +75,156 @@ for col in NUMERIC_FIELDS:
 # 4. GENERATE TARGET LABEL (Recommended Career)
 # ================================================================
 def generate_career(row):
-    dsa = to_num(row.get("Data Structures And Algorithm Marks", 0))
-    dbms = to_num(row.get("DBMS Marks", 0))
-    cgpa = to_num(row.get("CGPA", 0))
-    repos = to_num(row.get("GitHub total repositories", 0))
-    commits = to_num(row.get("GitHub commits/month", 0))
-    coding = to_num(row.get("Coding practice hours/week", 0))
-    aptitude = to_num(row.get("Aptitude score", 0))
-    
-    frameworks = str(row.get("Experience with frameworks", "")).lower()
-    prof = str(row.get("Programming proficiency", "")).lower()
+    # ---- Numeric features ----
+    dsa         = to_num(row.get("Data Structures And Algorithm Marks", 0))
+    dbms        = to_num(row.get("DBMS Marks", 0))
+    cgpa        = to_num(row.get("CGPA", 0))
+    repos       = to_num(row.get("GitHub total repositories", 0))
+    commits     = to_num(row.get("GitHub commits/month", 0))
+    coding      = to_num(row.get("Coding practice hours/week", 0))
+    aptitude    = to_num(row.get("Aptitude score", 0))
+    backlogs    = to_num(row.get("Number of backlogs", 0))
+    reappears   = to_num(row.get("Number of Reappears", 0))
+    attendance  = to_num(row.get("Attandance", 0))
 
-    # --- AI / ML Engineer ---
-    if aptitude >= 70 and cgpa >= 7.5 and dsa >= 65:
-        return "AI/ML Engineer"
+    # ---- English proficiency (dropdown text -> numeric) ----
+    english_raw = str(row.get("English proficiency", "Fair")).strip().lower()
+    english_map = {
+        "poor": 40,
+        "fair": 60,
+        "good": 80,
+        "excellent": 95,
+    }
+    english = english_map.get(english_raw, 60)   # default to "Fair"
 
-    # --- Software Engineer ---
-    if dsa >= 75 and coding >= 8 and (repos >= 2 or commits >= 4):
-        return "Software Engineer"
+    # ---- Text features ----
+    # "Experience with frameworks" can be comma/semicolon separated
+    frameworks_text = str(row.get("Experience with frameworks", "")).lower()
+    frameworks = [
+        f.strip()
+        for f in frameworks_text.replace(",", ";").split(";")
+        if f.strip()
+    ]
+    prog_prof = str(row.get("Programming proficiency", "")).lower()
 
-    # --- Web Developer ---
-    if any(f in frameworks for f in ["react", "angular", "django", "node"]) and coding >= 5:
-        return "Web Developer"
+    # ---- Score container ----
+    scores = {
+        "AI/ML Engineer": 0,
+        "Software Engineer": 0,
+        "Web Developer": 0,
+        "Data Analyst": 0,
+        "DevOps Engineer": 0,
+        "Cyber Security Engineer": 0,
+    }
 
-    # --- Data Analyst ---
-    if dbms >= 75 and aptitude >= 65:
-        return "Data Analyst"
+    # ---------- COMMON SIGNALS ----------
+    if cgpa >= 8.0:
+        for r in scores:
+            scores[r] += 1
+    if cgpa >= 8.5:
+        for r in scores:
+            scores[r] += 1
 
-    # --- DevOps Engineer ---
-    if any(k in frameworks for k in ["devops", "docker", "kubernetes", "aws", "cloud"]) and repos >= 2:
-        return "DevOps Engineer"
+    if backlogs > 0 or reappears > 0:
+        for r in scores:
+            scores[r] -= 1
+    if backlogs >= 3 or reappears >= 3:
+        for r in scores:
+            scores[r] -= 1
+    if attendance < 70:
+        for r in scores:
+            scores[r] -= 1
 
-    # --- Cyber Security ---
-    if "security" in prof or "cyber" in prof:
-        return "Cyber Security Engineer"
+    if english >= 70:
+        for r in scores:
+            scores[r] += 1
+    if aptitude >= 70:
+        for r in scores:
+            scores[r] += 1
 
-    # FALLBACKS
-    if dsa >= 70:
-        return "Software Engineer"
-    if dbms >= 70:
-        return "Data Analyst"
+    # ---------- AI / ML Engineer ----------
+    if dsa >= 80:
+        scores["AI/ML Engineer"] += 1
+    if "python" in frameworks:
+        scores["AI/ML Engineer"] += 1
+    if any(f in frameworks for f in ["numpy", "pandas", "tensorflow", "pytorch", "sklearn"]):
+        scores["AI/ML Engineer"] += 2
+    if coding >= 8:
+        scores["AI/ML Engineer"] += 1
+    if aptitude >= 85 and cgpa >= 8.5 and dsa >= 85:
+        scores["AI/ML Engineer"] += 2
 
-    return "Software Engineer"
+    # ---------- Software Engineer ----------
+    if dsa >= 75:
+        scores["Software Engineer"] += 2
+    if coding >= 10:
+        scores["Software Engineer"] += 2
+    if repos >= 2:
+        scores["Software Engineer"] += 1
+    if commits >= 4:
+        scores["Software Engineer"] += 1
+    if any(lang in frameworks for lang in ["java", "c++", "c#", "golang"]):
+        scores["Software Engineer"] += 1
+    if "advanced" in prog_prof or "intermediate" in prog_prof:
+        scores["Software Engineer"] += 1
+
+    # ---------- Web Developer ----------
+    if any(f in frameworks for f in [
+        "html", "css", "javascript", "react", "angular",
+        "vue", "django", "node", "next.js", "express"
+    ]):
+        scores["Web Developer"] += 2
+    if coding >= 6:
+        scores["Web Developer"] += 1
+    if repos >= 2:
+        scores["Web Developer"] += 1
+    if commits >= 4:
+        scores["Web Developer"] += 1
+
+    # ---------- Data Analyst ----------
+    if dbms >= 75:
+        scores["Data Analyst"] += 2
+    if aptitude >= 65:
+        scores["Data Analyst"] += 1
+    if any(f in frameworks for f in ["excel", "power bi", "tableau", "sql"]):
+        scores["Data Analyst"] += 2
+    if any(f in frameworks for f in ["numpy", "pandas"]):
+        scores["Data Analyst"] += 1
+    if coding >= 4:
+        scores["Data Analyst"] += 1
+
+    # ---------- DevOps Engineer ----------
+    if any(k in frameworks for k in [
+        "devops", "docker", "kubernetes", "k8s", "aws",
+        "azure", "gcp", "jenkins", "ci/cd", "cloud"
+    ]):
+        scores["DevOps Engineer"] += 3
+    if repos >= 2:
+        scores["DevOps Engineer"] += 1
+    if commits >= 5:
+        scores["DevOps Engineer"] += 1
+    if aptitude >= 70:
+        scores["DevOps Engineer"] += 1
+
+    # ---------- Cyber Security Engineer ----------
+    if any(k in frameworks for k in [
+        "security", "cyber", "network", "penetration testing",
+        "ethical hacking", "kali"
+    ]):
+        scores["Cyber Security Engineer"] += 3
+    if "security" in prog_prof or "cyber" in prog_prof:
+        scores["Cyber Security Engineer"] += 2
+    if aptitude >= 70:
+        scores["Cyber Security Engineer"] += 1
+
+    # ---------- FINAL SELECTION ----------
+    best_role = max(scores, key=scores.get)
+    best_score = scores[best_role]
+
+    if best_score <= 0:
+        return "Software Engineer"  # very weak signals: safe default
+
+    return best_role
 
 
 df["Recommended Career"] = df.apply(generate_career, axis=1)
